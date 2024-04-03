@@ -1,0 +1,88 @@
+{
+  "palio_incubator": {
+    "contract": "0xBeEDBF1d1908174b4Fc4157aCb128dA4FFa80942",
+    "abi": [
+      {
+        "inputs": [],
+        "name": "claimEgg",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint8",
+            "name": "utilityType",
+            "type": "uint8"
+          }
+        ],
+        "name": "claimUtility",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ]
+  },
+  "palio_voter": {
+    "contract": "0x73e987FB9F0b1c10db7D57b913dAa7F2Dc12b4f5",
+    "abi": [
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "characterIdx",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expireTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "_sig",
+            "type": "bytes"
+          }
+        ],
+        "name": "vote",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ]
+  },
+  "deposit": {
+    "contract": "0xc3671e7e875395314bbad175b2b7f0ef75da5339",
+    "abi": [
+      {
+        "type": "function",
+        "name": "depositETH",
+        "inputs": [
+          {
+            "name": "_minGasLimit",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "_extraData",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ],
+        "outputs": [],
+        "stateMutability": "payable"
+      }
+    ]
+  }
+}
