@@ -9,6 +9,7 @@ from loguru import logger
 from eth_account.messages import encode_defunct
 from fake_useragent import UserAgent
 
+
 class Xterio:
     def __init__(self, address, private_key, user_agent, proxies_conf=None):
         self.headers = {
@@ -30,6 +31,7 @@ class Xterio:
         self.address = address
         self.private_key = private_key
         self.proxies = proxies_conf
+        self.req_proxies = proxies_conf['proxies'] if self.proxies is not None else None
         self.xter_rpc = "https://xterio.alt.technology"
         self.bsc_rpc = "https://bsc-pokt.nodies.app"
 
@@ -77,7 +79,7 @@ class Xterio:
         response = requests.get(
             f'https://api.xter.io/account/v1/login/wallet/{self.address.upper()}',
             headers=self.headers,
-            proxies=self.proxies['proxies']
+            proxies=self.req_proxies
         )
 
         res = response.json()
@@ -105,7 +107,7 @@ class Xterio:
         }
 
         response = requests.post('https://api.xter.io/account/v1/login/wallet', headers=self.headers, json=json_data,
-                                 proxies=self.proxies['proxies'])
+                                 proxies=self.req_proxies)
         res = response.json()
 
         assert res['err_code'] == 0, "登录出错！"
@@ -150,7 +152,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/invite/apply',
             headers=self.headers,
             json=json_data,
-            proxies=self.proxies['proxies']
+            proxies=self.req_proxies
         )
 
         res = response.json()
@@ -166,7 +168,7 @@ class Xterio:
         }
 
         response = requests.post('https://api.xter.io/baas/v1/event/trigger', headers=self.headers, json=json_data,
-                                 proxies=self.proxies['proxies'])
+                                 proxies=self.req_proxies)
 
         res = response.json()
         assert res['err_code'] == 0, "claim 失败❗"
@@ -210,7 +212,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/prop',
             headers=self.headers,
             json=json_data,
-            proxies=self.proxies['proxies']
+            proxies=self.req_proxies
         )
 
         res = response.json()
@@ -220,7 +222,7 @@ class Xterio:
 
     def get_task_list(self):
         response = requests.get(f'https://api.xter.io/palio/v1/user/{self.address}/task',
-                                headers=self.headers, proxies=self.proxies['proxies'])
+                                headers=self.headers, proxies=self.req_proxies)
 
         res = response.json()
 
@@ -239,7 +241,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/task/report',
             headers=self.headers,
             json=json_data,
-            proxies=self.proxies['proxies']
+            proxies=self.req_proxies
         )
 
         res = response.json()
@@ -255,7 +257,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/task',
             headers=self.headers,
             json=json_data,
-            proxies=self.proxies['proxies']
+            proxies=self.req_proxies
         )
 
         res = response.json()
@@ -267,7 +269,7 @@ class Xterio:
         response = requests.get(
             f'https://api.xter.io/palio/v1/user/{self.address}/ticket',
             headers=self.headers,
-            proxies=self.proxies['proxies']
+            proxies=self.req_proxies
         )
 
         res = response.json()
@@ -323,7 +325,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/vote',
             headers=self.headers,
             json=json_data,
-            proxies=self.proxies['proxies']
+            proxies=self.req_proxies
         )
 
         res = response.json()
@@ -409,7 +411,7 @@ async def daily_start(semaphore, address, private_key, proxies_conf):
 
 
 async def main(run_type, invite_code):
-    f = open('account.txt', 'r', encoding='utf-8')
+    f = open('account1.txt', 'r', encoding='utf-8')
     accounts = f.readlines()
     f.close()
 
