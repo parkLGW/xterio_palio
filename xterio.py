@@ -77,6 +77,7 @@ class Xterio:
         response = requests.get(
             f'https://api.xter.io/account/v1/login/wallet/{self.address.upper()}',
             headers=self.headers,
+            proxies=self.proxies['proxies']
         )
 
         res = response.json()
@@ -103,7 +104,8 @@ class Xterio:
             'invite_code': '',
         }
 
-        response = requests.post('https://api.xter.io/account/v1/login/wallet', headers=self.headers, json=json_data)
+        response = requests.post('https://api.xter.io/account/v1/login/wallet', headers=self.headers, json=json_data,
+                                 proxies=self.proxies['proxies'])
         res = response.json()
 
         assert res['err_code'] == 0, "登录出错！"
@@ -148,6 +150,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/invite/apply',
             headers=self.headers,
             json=json_data,
+            proxies=self.proxies['proxies']
         )
 
         res = response.json()
@@ -162,7 +165,8 @@ class Xterio:
             'txHash': tx_hash,
         }
 
-        response = requests.post('https://api.xter.io/baas/v1/event/trigger', headers=self.headers, json=json_data)
+        response = requests.post('https://api.xter.io/baas/v1/event/trigger', headers=self.headers, json=json_data,
+                                 proxies=self.proxies['proxies'])
 
         res = response.json()
         assert res['err_code'] == 0, "claim 失败❗"
@@ -206,6 +210,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/prop',
             headers=self.headers,
             json=json_data,
+            proxies=self.proxies['proxies']
         )
 
         res = response.json()
@@ -215,7 +220,7 @@ class Xterio:
 
     def get_task_list(self):
         response = requests.get(f'https://api.xter.io/palio/v1/user/{self.address}/task',
-                                headers=self.headers)
+                                headers=self.headers, proxies=self.proxies['proxies'])
 
         res = response.json()
 
@@ -234,6 +239,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/task/report',
             headers=self.headers,
             json=json_data,
+            proxies=self.proxies['proxies']
         )
 
         res = response.json()
@@ -249,6 +255,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/task',
             headers=self.headers,
             json=json_data,
+            proxies=self.proxies['proxies']
         )
 
         res = response.json()
@@ -260,6 +267,7 @@ class Xterio:
         response = requests.get(
             f'https://api.xter.io/palio/v1/user/{self.address}/ticket',
             headers=self.headers,
+            proxies=self.proxies['proxies']
         )
 
         res = response.json()
@@ -315,6 +323,7 @@ class Xterio:
             f'https://api.xter.io/palio/v1/user/{self.address}/vote',
             headers=self.headers,
             json=json_data,
+            proxies=self.proxies['proxies']
         )
 
         res = response.json()
