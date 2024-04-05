@@ -335,6 +335,37 @@ class Xterio:
 
         self.vote_onchain(res['data'])
 
+    def boost(self):
+        f = open('abi.json', 'r', encoding='utf-8')
+        contract_palio = json.load(f)['palio_incubator']
+        abi = contract_palio['abi']
+        contract_address = Web3.to_checksum_address(contract_palio['contract'])
+
+        w3 = Web3(Web3.HTTPProvider(self.xter_rpc, request_kwargs=self.proxies))
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+        contract = w3.eth.contract(address=contract_address, abi=abi)
+
+        gas = contract.functions.boost().estimate_gas(
+            {
+                'from': self.address,
+                'nonce': w3.eth.get_transaction_count(account=self.address),
+                'value': w3.to_wei(0.01, 'ether'),
+            }
+        )
+        transaction = contract.functions.boost().build_transaction({
+            'gasPrice': w3.eth.gas_price,
+            'nonce': w3.eth.get_transaction_count(account=self.address),
+            'gas': gas,
+            'value': w3.to_wei(0.01, 'ether'),
+        })
+        signed_transaction = w3.eth.account.sign_transaction(transaction, private_key=self.private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
+        w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        self.trigger(tx_hash.hex())
+        logger.info(f"boost 成功✔ hash:{tx_hash.hex()}")
+
 
 async def new_account_start(semaphore, invite_code, address, private_key, proxies_conf):
     async with semaphore:
@@ -410,6 +441,16 @@ async def daily_start(semaphore, address, private_key, proxies_conf):
             logger.error(f"{address} 执行失败 msg:{e}")
 
 
+async def boost_purchase(semaphore, address, private_key, proxies_conf):
+    async with semaphore:
+        try:
+            xter_obj = Xterio(address, private_key, UserAgent().random, proxies_conf)
+            xter_obj.sign_in()
+            xter_obj.boost()
+        except Exception as e:
+            logger.error(f"{address} 执行失败 msg:{e}")
+
+
 async def main(run_type, invite_code):
     f = open('account1.txt', 'r', encoding='utf-8')
     accounts = f.readlines()
@@ -442,10 +483,12 @@ async def main(run_type, invite_code):
                 asyncio.create_task(new_account_start(semaphore, invite_code, address, private_key, proxies_conf)))
         elif run_type == 2:
             missions.append(asyncio.create_task(daily_start(semaphore, address, private_key, proxies_conf)))
+        elif run_type == 3:
+            missions.append(asyncio.create_task(boost_purchase(semaphore, address, private_key, proxies_conf)))
     await asyncio.gather(*missions)
 
 
 if __name__ == '__main__':
     invite_code = "f076f883fd1503fb614731a1a20bb1c4"
-    run_type = input("选择:\n 1. 新注册帐号 \n 2. 日常签到 \n 输入:")
+    run_type = input("选择:\n 1. 新注册帐号 \n 2. 日常签到 \n 3. 购买boost \n输入:")
     asyncio.run(main(int(run_type), invite_code))

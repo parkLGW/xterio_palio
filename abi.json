@@ -21,6 +21,13 @@
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "boost",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
       }
     ]
   },

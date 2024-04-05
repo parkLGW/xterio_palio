@@ -2,6 +2,10 @@
 
 xterio 任务
 
+## update
+
+1. 0.01bnb 购买boost
+
 ## config
 
 account.txt 填写账号，格式：地址,私钥 一行一个 （注意用英文逗号）不要有多余的空行
