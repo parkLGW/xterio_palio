@@ -275,9 +275,24 @@ class Xterio:
         res = response.json()
 
         assert res['err_code'] == 0, f'获取票数 报错！'
-        logger.info(f"获取票数成功✔  当前票数：{res['data']['total_ticket']}")
+        logger.info(f"获取票数成功✔  当前总票数：{res['data']['total_ticket']}")
 
-        return res['data']['total_ticket']
+        return res['data']['total_ticket'] - self.get_voted_amt()
+
+    def get_voted_amt(self):
+        f = open('abi.json', 'r', encoding='utf-8')
+        contract_palio = json.load(f)['palio_voter']
+        abi = contract_palio['abi']
+        contract_address = Web3.to_checksum_address(contract_palio['contract'])
+
+        w3 = Web3(Web3.HTTPProvider(self.xter_rpc, request_kwargs=self.proxies))
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+        contract = w3.eth.contract(address=contract_address, abi=abi)
+
+        res = contract.functions.userVotedAmt(w3.to_checksum_address(self.address)).call()
+
+        return res
 
     def vote_onchain(self, vote_param):
         f = open('abi.json', 'r', encoding='utf-8')
@@ -452,7 +467,7 @@ async def boost_purchase(semaphore, address, private_key, proxies_conf):
 
 
 async def main(run_type, invite_code):
-    f = open('account1.txt', 'r', encoding='utf-8')
+    f = open('account.txt', 'r', encoding='utf-8')
     accounts = f.readlines()
     f.close()
 
