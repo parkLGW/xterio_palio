@@ -5,6 +5,7 @@ xterio 任务
 ## update
 
 1. 0.01bnb 购买boost
+2. chat任务 在文心一言申请免费api，在454行填写api_key和secret_key **或者** 直接在458行将sentence改成固定内容（不确定会不会女巫）
 
 ## config
 

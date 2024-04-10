@@ -10,6 +10,54 @@ from eth_account.messages import encode_defunct
 from fake_useragent import UserAgent
 
 
+class WenXin:
+    def __init__(self, API_KEY, SECRET_KEY):
+        self.API_KEY = API_KEY
+        self.SECRET_KEY = SECRET_KEY
+        self.model_url = {
+            "ErnieBot-turbo": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant?",
+            "ErnieBot": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions?",
+            "BLOOMZ-7B": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/bloomz_7b1?",
+            "Yi-34B": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/yi_34b_chat",
+        }
+        self.headers = {'Content-Type': 'application/json'}
+
+    def get_access_token(self):
+        url = "https://aip.baidubce.com/oauth/2.0/token"
+        params = {"grant_type": "client_credentials", "client_id": self.API_KEY, "client_secret": self.SECRET_KEY}
+        return str(requests.post(url, params=params).json().get("access_token"))
+
+    def get_response(self, content, model_type='ErnieBot-turbo'):
+        url = self.model_url.get(model_type)
+        if url is None:
+            raise Exception("未知的模型类型")
+        access_token = self.get_access_token()
+        # url = url + "access_token=" + access_token
+        payload = json.dumps({
+            "messages": [
+                {
+                    "role": "user",
+                    "content": content,
+                },
+            ]
+        })
+
+        response = requests.request("POST", url, headers=self.headers, data=payload,
+                                    params={"access_token": access_token})
+        result = json.loads(response.text)['result']
+
+        sentences = result.split('.')
+        max_len = 0
+        final_sentence = ''
+        for sent in sentences:
+            max_len += len(sent) + 1
+            if max_len >= 300:
+                break
+            final_sentence += sent + '.'
+
+        return final_sentence
+
+
 class Xterio:
     def __init__(self, address, private_key, user_agent, proxies_conf=None):
         self.headers = {
@@ -381,6 +429,84 @@ class Xterio:
         self.trigger(tx_hash.hex())
         logger.info(f"boost 成功✔ hash:{tx_hash.hex()}")
 
+    def send_story(self):
+        headers = {
+            'Accept': '*/*',
+            'Accept-Language': 'zh-HK,zh-TW;q=0.9,zh;q=0.8',
+            'Authorization': self.headers['authorization'],
+            'Connection': 'keep-alive',
+            'Content-Type': 'text/plain;charset=UTF-8',
+            'Origin': 'https://xter.io',
+            'Referer': 'https://xter.io/',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'cross-site',
+            'User-Agent': self.headers['user-agent'],
+            'sec-ch-ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+        }
+
+        params = {
+            'address': self.address,
+        }
+
+        wx = WenXin(API_KEY='', SECRET_KEY='')
+        content = "I've got a teeny-tiny question, can you tell me, what is ”SADNESS“? Is sadness like when the sun goes away in the sky and the whole world gets really quiet?\nYou need to control the number of response characters to not exceed 300."
+        sentence = wx.get_response(content, "Yi-34B")
+
+        # sentence = "你复制的内容"
+
+        j_data = {
+            "answer": sentence
+        }
+
+        response = requests.post(
+            'https://3656kxpioifv7aumlcwe6zcqaa0eeiab.lambda-url.eu-central-1.on.aws/',
+            params=params,
+            headers=headers,
+            data=json.dumps(j_data),
+            proxies=self.req_proxies
+        )
+
+        score = 0
+        for line in response.iter_lines():
+            if line:
+                data = json.loads(line)
+                if data.get('score'):
+                    score = data['score']
+
+        logger.info(f"最终得分：{score}")
+
+    def claim_chat_nft(self):
+        f = open('abi.json', 'r', encoding='utf-8')
+        contract_palio = json.load(f)['palio_incubator']
+        abi = contract_palio['abi']
+        contract_address = Web3.to_checksum_address(contract_palio['contract'])
+
+        w3 = Web3(Web3.HTTPProvider(self.xter_rpc, request_kwargs=self.proxies))
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+        contract = w3.eth.contract(address=contract_address, abi=abi)
+
+        gas = contract.functions.claimChatNFT().estimate_gas(
+            {
+                'from': self.address,
+                'nonce': w3.eth.get_transaction_count(account=self.address)
+            }
+        )
+        transaction = contract.functions.claimChatNFT().build_transaction({
+            'gasPrice': w3.eth.gas_price,
+            'nonce': w3.eth.get_transaction_count(account=self.address),
+            'gas': gas
+        })
+        signed_transaction = w3.eth.account.sign_transaction(transaction, private_key=self.private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
+        w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        self.trigger(tx_hash.hex())
+        logger.info(f"chat nft claim 成功✔ hash:{tx_hash.hex()}")
+
 
 async def new_account_start(semaphore, invite_code, address, private_key, proxies_conf):
     async with semaphore:
@@ -500,10 +626,40 @@ async def main(run_type, invite_code):
             missions.append(asyncio.create_task(daily_start(semaphore, address, private_key, proxies_conf)))
         elif run_type == 3:
             missions.append(asyncio.create_task(boost_purchase(semaphore, address, private_key, proxies_conf)))
+        elif run_type == 4:
+            missions.append(asyncio.create_task(send_chat(semaphore, address, private_key, proxies_conf)))
     await asyncio.gather(*missions)
+
+
+async def send_chat(semaphore, address, private_key, proxies_conf):
+    async with semaphore:
+        try:
+            xter_obj = Xterio(address, private_key, UserAgent().random, proxies_conf)
+
+            xter_obj.sign_in()
+            time.sleep(3)
+
+            xter_obj.send_story()
+            xter_obj.claim_chat_nft()
+            time.sleep(3)
+            xter_obj.report(18)
+
+            task_list = xter_obj.get_task_list()
+            for task in task_list:
+                task_id = task['ID']
+                for user_task in task['user_task']:
+                    if user_task['status'] == 1:
+                        try:
+                            xter_obj.task(task_id)
+                            time.sleep(3)
+                        except Exception as e1:
+                            logger.error(e1)
+
+        except Exception as e:
+            logger.error(f"{address} 执行失败 msg:{e}")
 
 
 if __name__ == '__main__':
     invite_code = "f076f883fd1503fb614731a1a20bb1c4"
-    run_type = input("选择:\n 1. 新注册帐号 \n 2. 日常签到 \n 3. 购买boost \n输入:")
+    run_type = input("选择:\n 1. 新注册帐号 \n 2. 日常签到 \n 3. 购买boost \n 4. chat 任务 \n输入:")
     asyncio.run(main(int(run_type), invite_code))
